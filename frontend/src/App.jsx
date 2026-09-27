@@ -51,7 +51,7 @@ function App() {
   function send()
   {
     setstatus(true)
-    axios.post("https://shiva-bulk-mail-backend.vercel.app/sendemail",{msg:msg,emailList:emailList})
+    axios.post("https://shiva-bulk-mail-backend.vercel.app/sendemail",{message:msg,emailList:emailList})
     .then(function(data)
     {
       if(data.data === true)
@@ -69,7 +69,7 @@ function App() {
   return (
     <div>
       <div className="bg-blue-950 text-white text-center">
-        <h1 className="text-2xl font-medium px-5 py-3">BulkMail</h1>
+        <h1 className="text-2xl font-medium px-5 py-3">Bulk Mail</h1>
       </div>
 
       <div className="bg-blue-800 text-white text-center">
