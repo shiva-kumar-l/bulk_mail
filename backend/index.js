@@ -31,6 +31,7 @@ const emailTemplate = (message, recipient) => ({
 
 const sendMails = async ({ message, emailList }) => {
   try {
+    console.log("message:", message);
     for (const recipient of emailList) {
       await transporter.sendMail(
         emailTemplate(message, recipient)
