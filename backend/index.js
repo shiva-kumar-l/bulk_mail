@@ -17,13 +17,13 @@ app.use(cors(corsOptions));
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: "shivakumarxofficial@gmail.com",
+    pass: "fgam vxrs fnke bszh",
   },
 });
 
 const emailTemplate = (message, recipient) => ({
-  from: process.env.EMAIL_USER,
+  from: "shivakumarxofficial@gmail.com",
   to: recipient,
   subject: "You get Text Message from Your App!",
   text: message,
