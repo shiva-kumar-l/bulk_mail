@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
@@ -6,35 +8,59 @@ const app = express();
 
 app.use(express.json());
 
+// Allowed frontend URLs
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://shiva-bulk-mail.vercel.app",
+];
+
+// CORS configuration
 const corsOptions = {
-  origin: "https://shiva-bulk-mail.vercel.app",
+  origin: function (origin, callback) {
+    // Allow requests without an origin
+    // and requests from our allowed frontends
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
 
+// Nodemailer configuration
 const transporter = nodemailer.createTransport({
   service: "gmail",
+
   auth: {
-    user: "shivakumarxofficial@gmail.com",
-    pass: "fgam vxrs fnke bszh",
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
-const emailTemplate = (message, recipient) => ({
-  from: "shivakumarxofficial@gmail.com",
+// Email template
+const emailTemplate = (subject, message, recipient) => ({
+  from: process.env.EMAIL_USER,
   to: recipient,
-  subject: "You get Text Message from Your App!",
+  subject: subject,
   text: message,
 });
 
-const sendMails = async ({ message, emailList }) => {
+// Send emails
+const sendMails = async ({ subject, message, emailList }) => {
   try {
-    console.log("message:", message);
+    console.log("Subject:", subject);
+    console.log("Message:", message);
+    console.log("Email List:", emailList);
+
     for (const recipient of emailList) {
       await transporter.sendMail(
-        emailTemplate(message, recipient)
+        emailTemplate(subject, message, recipient)
       );
 
       console.log(`Email sent to ${recipient}`);
@@ -47,15 +73,55 @@ const sendMails = async ({ message, emailList }) => {
   }
 };
 
+// Send email API
 app.post("/sendemail", async (req, res) => {
   try {
-    await sendMails(req.body);
-    res.send(true);
+    const { subject, message, emailList } = req.body;
+
+    // Validation
+    if (!subject || subject.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Subject is required",
+      });
+    }
+
+    if (!message || message.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Email message is required",
+      });
+    }
+
+    if (!emailList || emailList.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Recipient email list is required",
+      });
+    }
+
+    await sendMails({
+      subject,
+      message,
+      emailList,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Emails sent successfully",
+    });
   } catch (error) {
-    res.status(500).send(false);
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to send emails",
+    });
   }
 });
 
+// Start server locally
 app.listen(5000, () => {
   console.log("Server Started.....");
+  console.log("http://localhost:5000");
 });

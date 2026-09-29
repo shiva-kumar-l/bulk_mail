@@ -1,19 +1,23 @@
 import axios from "axios";
 import { useState } from "react";
-import * as XLSX from "xlsx"
+import * as XLSX from "xlsx";
 
 function App() {
+  const [subject, setSubject] = useState("");
+  const [msg, setMsg] = useState("");
+  const [emailList, setEmailList] = useState([]);
+  const [status, setStatus] = useState(false);
+  const [result, setResult] = useState("");
 
-  const [msg,setmsg] = useState("")
-  const [status,setstatus] = useState(false)
-  const [emailList,setEmailList] = useState([])
-
-  function handlemsg(evt)
-  {
-    setmsg(evt.target.value)
+  function handleSubject(event) {
+    setSubject(event.target.value);
   }
 
-  function handlefile(event) {
+  function handleMsg(event) {
+    setMsg(event.target.value);
+  }
+
+  function handleFile(event) {
     const file = event.target.files[0];
 
     if (!file) return;
@@ -21,79 +25,166 @@ function App() {
     const reader = new FileReader();
 
     reader.onload = (e) => {
-        const data = new Uint8Array(e.target.result);
+      const data = new Uint8Array(e.target.result);
 
-        const workbook = XLSX.read(data, {
-            type: "array"
-        });
+      const workbook = XLSX.read(data, {
+        type: "array",
+      });
 
-        // Get first sheet
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
+      // Get first sheet
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
 
-        // Convert Excel to array
-        const rows = XLSX.utils.sheet_to_json(worksheet, {
-            header: 1
-        });
+      // Convert Excel to array
+      const rows = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1,
+      });
 
-        console.log("Excel data:", rows);
+      console.log("Excel data:", rows);
 
-        // Display each email
-        const emailList = rows.map((row) => row[0]);
-        console.log(emailList);
+      // Get emails from first column
+      const emails = rows
+        .map((row) => row[0])
+        .filter((email) => email && String(email).includes("@"))
+        .map((email) => String(email).trim());
 
-        setEmailList(emailList)
+      console.log("Email List:", emails);
+
+      setEmailList(emails);
+      setResult(`${emails.length} email(s) loaded successfully.`);
     };
 
     reader.readAsArrayBuffer(file);
-};
+  }
 
-  function send()
-  {
-    setstatus(true)
-    axios.post("https://shiva-bulk-mail-backend.vercel.app/sendemail",{message:msg,emailList:emailList})
-    .then(function(data)
-    {
-      if(data.data === true)
-      {
-        alert("Email Sent Successfully")
-        setstatus(false)
-      }
-      else{
-        alert("Failed")
-        setstatus(false)
-      }
-    })
+  function send() {
+    // Validation
+    if (subject.trim() === "") {
+      alert("Please enter the email subject.");
+      return;
+    }
+
+    if (msg.trim() === "") {
+      alert("Please enter the email body.");
+      return;
+    }
+
+    if (emailList.length === 0) {
+      alert("Please upload an Excel file containing recipient emails.");
+      return;
+    }
+
+    setStatus(true);
+    setResult("");
+
+    axios
+      .post(`${import.meta.env.VITE_API_URL}/sendemail`, {
+        subject: subject,
+        message: msg,
+        emailList: emailList,
+      })
+      .then(function (response) {
+        if (response.data.success === true) {
+          setResult("Emails sent successfully!");
+          alert("Emails Sent Successfully");
+
+          // Clear form after successful sending
+          setSubject("");
+          setMsg("");
+          setEmailList([]);
+        } else {
+          setResult("Failed to send emails.");
+          alert("Failed");
+        }
+      })
+      .catch(function (error) {
+        console.log(error);
+        setResult("Something went wrong while sending emails.");
+        alert("Failed to send emails.");
+      })
+      .finally(function () {
+        setStatus(false);
+      });
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-blue-100">
+      {/* Header */}
       <div className="bg-blue-950 text-white text-center">
-        <h1 className="text-2xl font-medium px-5 py-3">Bulk Mail</h1>
+        <h1 className="text-2xl font-medium px-5 py-3">
+          Bulk Mail
+        </h1>
       </div>
 
+      {/* Description */}
       <div className="bg-blue-800 text-white text-center">
-        <h1 className="font-medium px-5 py-3">We can help your business with sending multiple emails at once</h1>
+        <h1 className="font-medium px-5 py-3">
+          We can help your business with sending multiple emails at once
+        </h1>
       </div>
 
+      {/* Upload Section */}
       <div className="bg-blue-600 text-white text-center">
-        <h1 className="font-medium px-5 py-3">Drag and Drop</h1>
+        <h1 className="font-medium px-5 py-3">
+          Send Bulk Emails
+        </h1>
       </div>
 
-      <div className="bg-blue-400 flex flex-col items-center text-black px-5 py-3">
-        <textarea onChange={handlemsg} value={msg} className="w-[80%] bg-white h-32 py-2 outline-none px-2 border border-black rounded-md" placeholder="Enter the email text ...."></textarea>
+      {/* Form */}
+      <div className="bg-blue-400 flex flex-col items-center text-black px-5 py-8">
 
+        {/* Subject */}
+        <input
+          type="text"
+          value={subject}
+          onChange={handleSubject}
+          placeholder="Enter email subject..."
+          className="w-[80%] bg-white py-3 px-3 outline-none border border-black rounded-md mb-4"
+        />
+
+        {/* Email Body */}
+        <textarea
+          onChange={handleMsg}
+          value={msg}
+          className="w-[80%] bg-white h-32 py-2 outline-none px-2 border border-black rounded-md"
+          placeholder="Enter the email body..."
+        ></textarea>
+
+        {/* Excel Upload */}
         <div>
-          <input type="file" onChange={handlefile}  className="border-4 bg-white border-dashed py-4 px-4 mt-5 mb-5" />
+          <input
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFile}
+            className="border-4 bg-white border-dashed py-4 px-4 mt-5 mb-5"
+          />
         </div>
 
-        <p>Total Emails in the file: {emailList.length}</p>
+        {/* Email Count */}
+        <p className="font-medium">
+          Total Recipients: {emailList.length}
+        </p>
 
-        <button  onClick={send} className="mt-2 bg-blue-950 py-2 px-2 text-white font-medium rounded-md w-fit">{status?"Sending...":"Send"}</button>
+        {/* Result Message */}
+        {result && (
+          <p className="mt-3 font-medium">
+            {result}
+          </p>
+        )}
+
+        {/* Send Button */}
+        <button
+          onClick={send}
+          disabled={status}
+          className="mt-4 bg-blue-950 py-2 px-6 text-white font-medium rounded-md"
+        >
+          {status ? "Sending..." : "Send Emails"}
+        </button>
       </div>
-      <div className="bg-blue-300 text-white text-center p-8">
-      </div>
-      <div className="bg-blue-200 text-white text-center p-8">
+
+      {/* Footer */}
+      <div className="bg-blue-950 text-white text-center p-8">
+        <p>Bulk Mail Application</p>
       </div>
     </div>
   );
