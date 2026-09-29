@@ -77,8 +77,7 @@ function App() {
     setStatus(true);
     setResult("");
 
-    axios
-      .post(`${import.meta.env.VITE_API_URL}/sendemail`, {
+      axios.post(`${import.meta.env.VITE_API_URL}/sendemail`, {
         subject: subject,
         message: msg,
         emailList: emailList,
