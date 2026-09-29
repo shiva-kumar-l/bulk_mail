@@ -97,10 +97,18 @@ function App() {
         }
       })
       .catch(function (error) {
-        console.log(error);
-        setResult("Something went wrong while sending emails.");
-        alert("Failed to send emails.");
-      })
+          console.log("FULL ERROR:", error);
+          console.log("STATUS:", error.response?.status);
+          console.log("BACKEND DATA:", error.response?.data);
+
+          const backendMessage =
+            error.response?.data?.error ||
+            error.response?.data?.message ||
+            "Something went wrong while sending emails.";
+
+          setResult(backendMessage);
+          alert(backendMessage);
+        })
       .finally(function () {
         setStatus(false);
       });
